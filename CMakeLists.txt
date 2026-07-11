@@ -43,7 +43,7 @@ if(OPTIONAL_ENABLE_TESTING)
         # Tests
         add_subdirectory(tests/beman/optional)
         include(GoogleTest)
-        gtest_discover_tests(beman.optional.test)
+        gtest_discover_tests(beman.optional.test DISCOVERY_TIMEOUT 60)
     else()
         message(
             WARNING
