@@ -17,7 +17,10 @@
 
 #include <beman/optional/detail/iterator.hpp>
 
-namespace beman::optional {
+/// @brief Root namespace for the Beman Project libraries.
+namespace beman {
+/// @brief A freestanding-friendly `optional`, including support for `optional<T&>`.
+namespace optional {
 
 namespace detail {
 template <typename T, typename U>
@@ -62,6 +65,7 @@ inline constexpr from_function_t from_function{};
  * @brief Tag type for in-place construction
  */
 struct in_place_t {
+    /// @brief Constructs an in-place construction tag.
     explicit in_place_t() = default;
 };
 
@@ -70,7 +74,8 @@ struct in_place_t {
  */
 inline constexpr in_place_t in_place{};
 
-} // namespace beman::optional
+} // namespace optional
+} // namespace beman
 
 namespace beman::optional {
 template <class T>
@@ -118,15 +123,27 @@ struct nullopt_t {
 
     /**
      * @brief Construct a new nullopt_t object
-     * @arg Tag
+     * @param tag Disambiguation tag; its value is not used.
      * @details constexpr for nullopt_t to be literal.
      */
-    explicit constexpr nullopt_t(Tag) noexcept {}
+    explicit constexpr nullopt_t(Tag tag) noexcept {}
 
   private:
-    friend constexpr bool operator==(nullopt_t, nullopt_t) noexcept { return true; }
+    /**
+     * @brief Compares two `nullopt_t` objects for equality.
+     * @param lhs The left-hand `nullopt_t` object.
+     * @param rhs The right-hand `nullopt_t` object.
+     * @return Always `true`, since all `nullopt_t` objects compare equal.
+     */
+    friend constexpr bool operator==(nullopt_t lhs, nullopt_t rhs) noexcept { return true; }
 
-    friend constexpr std::strong_ordering operator<=>(nullopt_t, nullopt_t) noexcept {
+    /**
+     * @brief Compares two `nullopt_t` objects.
+     * @param lhs The left-hand `nullopt_t` object.
+     * @param rhs The right-hand `nullopt_t` object.
+     * @return Always `std::strong_ordering::equivalent`, since all `nullopt_t` objects compare equal.
+     */
+    friend constexpr std::strong_ordering operator<=>(nullopt_t lhs, nullopt_t rhs) noexcept {
         return std::strong_ordering::equivalent;
     }
 };
@@ -138,82 +155,214 @@ inline constexpr nullopt_t nullopt{nullopt_t::Tag::tag};
 class bad_optional_access;
 
 // \ref{optional.relops}, relational operators
+/**
+ * @brief Compares two optionals for equality.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return `true` if both are disengaged, or both are engaged and their contained values are equal.
+ */
 template <typename T, typename U>
 constexpr bool operator==(const optional<T>& lhs, const optional<U>& rhs)
     requires detail::optional_eq_rel<T, U>;
+/**
+ * @brief Compares two optionals for inequality.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return `true` if the operands are not equal.
+ */
 template <typename T, typename U>
 constexpr bool operator!=(const optional<T>& lhs, const optional<U>& rhs)
     requires detail::optional_ne_rel<T, U>;
+/**
+ * @brief Orders two optionals with less-than.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return `true` if @p lhs orders before @p rhs; a disengaged optional orders before any engaged one.
+ */
 template <typename T, typename U>
 constexpr bool operator<(const optional<T>& lhs, const optional<U>& rhs)
     requires detail::optional_lt_rel<T, U>;
+/**
+ * @brief Orders two optionals with greater-than.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return `true` if @p lhs orders after @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator>(const optional<T>& lhs, const optional<U>& rhs)
     requires detail::optional_gt_rel<T, U>;
+/**
+ * @brief Orders two optionals with less-than-or-equal.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return `true` if @p lhs does not order after @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator<=(const optional<T>& lhs, const optional<U>& rhs)
     requires detail::optional_le_rel<T, U>;
+/**
+ * @brief Orders two optionals with greater-than-or-equal.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return `true` if @p lhs does not order before @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator>=(const optional<T>& lhs, const optional<U>& rhs)
     requires detail::optional_ge_rel<T, U>;
+/**
+ * @brief Three-way comparison of two optionals.
+ * @param lhs The left-hand optional.
+ * @param rhs The right-hand optional.
+ * @return The comparison category; a disengaged optional orders before any engaged one.
+ */
 template <class T, std::three_way_comparable_with<T> U>
-constexpr std::compare_three_way_result_t<T, U> operator<=>(const optional<T>&, const optional<U>&);
+constexpr std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& lhs, const optional<U>& rhs);
 
 // \ref{optional.nullops}, comparison with \tcode{nullopt}
+/**
+ * @brief Compares an optional against `nullopt`.
+ * @param lhs The optional to test.
+ * @param rhs The `nullopt` operand.
+ * @return `true` if @p lhs is disengaged.
+ */
 template <class T>
-constexpr bool operator==(const optional<T>&, nullopt_t) noexcept;
+constexpr bool operator==(const optional<T>& lhs, nullopt_t rhs) noexcept;
+/**
+ * @brief Three-way comparison of an optional against `nullopt`.
+ * @param lhs The optional to compare.
+ * @param rhs The `nullopt` operand.
+ * @return `equivalent` if @p lhs is disengaged, otherwise `greater`.
+ */
 template <class T>
-constexpr std::strong_ordering operator<=>(const optional<T>&, nullopt_t) noexcept;
+constexpr std::strong_ordering operator<=>(const optional<T>& lhs, nullopt_t rhs) noexcept;
 
 // \ref{optional.comp.with.t}, comparison with \tcode{T}
+/**
+ * @brief Compares an engaged optional's value against a value for equality.
+ * @param lhs The optional operand.
+ * @param rhs The value operand.
+ * @return `true` if @p lhs is engaged and its contained value equals @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator==(const optional<T>& lhs, const U& rhs)
     requires (!detail::is_optional<U>) && detail::optional_eq_rel<T, U>;
 
+/**
+ * @brief Compares a value against an engaged optional's value for equality.
+ * @param lhs The value operand.
+ * @param rhs The optional operand.
+ * @return `true` if @p rhs is engaged and @p lhs equals its contained value.
+ */
 template <typename T, typename U>
 constexpr bool operator==(const T& lhs, const optional<U>& rhs)
     requires (!detail::is_optional<T>) && detail::optional_eq_rel<T, U>;
 
+/**
+ * @brief Compares an optional against a value for inequality.
+ * @param lhs The optional operand.
+ * @param rhs The value operand.
+ * @return `true` if @p lhs is disengaged or its contained value differs from @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator!=(const optional<T>& lhs, const U& rhs)
     requires (!detail::is_optional<U>) && detail::optional_ne_rel<T, U>;
 
+/**
+ * @brief Compares a value against an optional for inequality.
+ * @param lhs The value operand.
+ * @param rhs The optional operand.
+ * @return `true` if @p rhs is disengaged or @p lhs differs from its contained value.
+ */
 template <typename T, typename U>
 constexpr bool operator!=(const T& lhs, const optional<U>& rhs)
     requires (!detail::is_optional<T>) && detail::optional_ne_rel<T, U>;
 
+/**
+ * @brief Orders an optional before a value with less-than.
+ * @param lhs The optional operand.
+ * @param rhs The value operand.
+ * @return `true` if @p lhs is disengaged, or its contained value orders before @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator<(const optional<T>& lhs, const U& rhs)
     requires (!detail::is_optional<U>) && detail::optional_lt_rel<T, U>;
 
+/**
+ * @brief Orders a value before an optional with less-than.
+ * @param lhs The value operand.
+ * @param rhs The optional operand.
+ * @return `true` if @p rhs is engaged and @p lhs orders before its contained value.
+ */
 template <typename T, typename U>
 constexpr bool operator<(const T& lhs, const optional<U>& rhs)
     requires (!detail::is_optional<T>) && detail::optional_lt_rel<T, U>;
 
+/**
+ * @brief Orders an optional after a value with greater-than.
+ * @param lhs The optional operand.
+ * @param rhs The value operand.
+ * @return `true` if @p lhs is engaged and its contained value orders after @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator>(const optional<T>& lhs, const U& rhs)
     requires (!detail::is_optional<U>) && detail::optional_gt_rel<T, U>;
 
+/**
+ * @brief Orders a value after an optional with greater-than.
+ * @param lhs The value operand.
+ * @param rhs The optional operand.
+ * @return `true` if @p rhs is disengaged, or @p lhs orders after its contained value.
+ */
 template <typename T, typename U>
 constexpr bool operator>(const T& lhs, const optional<U>& rhs)
     requires (!detail::is_optional<T>) && detail::optional_gt_rel<T, U>;
 
+/**
+ * @brief Orders an optional before or equal to a value.
+ * @param lhs The optional operand.
+ * @param rhs The value operand.
+ * @return `true` if @p lhs is disengaged, or its contained value does not order after @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator<=(const optional<T>& lhs, const U& rhs)
     requires (!detail::is_optional<U>) && detail::optional_le_rel<T, U>;
 
+/**
+ * @brief Orders a value before or equal to an optional.
+ * @param lhs The value operand.
+ * @param rhs The optional operand.
+ * @return `true` if @p rhs is engaged and @p lhs does not order after its contained value.
+ */
 template <typename T, typename U>
 constexpr bool operator<=(const T& lhs, const optional<U>& rhs)
     requires (!detail::is_optional<T>) && detail::optional_le_rel<T, U>;
 
+/**
+ * @brief Orders an optional after or equal to a value.
+ * @param lhs The optional operand.
+ * @param rhs The value operand.
+ * @return `true` if @p lhs is engaged and its contained value does not order before @p rhs.
+ */
 template <typename T, typename U>
 constexpr bool operator>=(const optional<T>& lhs, const U& rhs)
     requires (!detail::is_optional<U>) && detail::optional_ge_rel<T, U>;
 
+/**
+ * @brief Orders a value after or equal to an optional.
+ * @param lhs The value operand.
+ * @param rhs The optional operand.
+ * @return `true` if @p rhs is disengaged, or @p lhs does not order before its contained value.
+ */
 template <typename T, typename U>
 constexpr bool operator>=(const T& lhs, const optional<U>& rhs)
     requires (!detail::is_optional<T>) && detail::optional_ge_rel<T, U>;
 
+/**
+ * @brief Three-way comparison of an optional against a value.
+ * @param x The optional operand.
+ * @param v The value operand.
+ * @return The comparison category; a disengaged optional orders before @p v.
+ */
 template <typename T, typename U>
     requires (!is_derived_from_optional<U>) && std::three_way_comparable_with<T, U>
 constexpr std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& x, const U& v);
@@ -221,23 +370,38 @@ constexpr std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& x
 // \ref{optional.specalg}, specialized algorithms
 /**
  * @brief Swap
+ * @param x The first optional to swap.
+ * @param y The second optional to swap.
  */
 template <class T>
 constexpr void swap(optional<T>& x, optional<T>& y) noexcept(noexcept(x.swap(y)))
     requires std::is_move_constructible_v<T> && std::is_swappable_v<T>;
 
 /**
- * @brief Make an optional
+ * @brief Creates an optional holding a decayed copy of the given value.
+ * @param t The value to store in the returned optional.
+ * @return An engaged optional whose contained value is constructed from @p t.
  */
 template <int = 0, class T>
 constexpr optional<std::decay_t<T>>
-make_optional(T&&) noexcept(std::is_nothrow_constructible_v<optional<std::decay_t<T>>, T>)
+make_optional(T&& t) noexcept(std::is_nothrow_constructible_v<optional<std::decay_t<T>>, T>)
     requires std::is_constructible_v<std::decay_t<T>, T>;
 
+/**
+ * @brief Creates an optional<T> constructing the value in-place from the given arguments.
+ * @param args The arguments forwarded to the constructor of @p T.
+ * @return An engaged optional<T> holding the in-place constructed value.
+ */
 template <class T, class... Args>
 constexpr optional<T> make_optional(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
     requires std::is_constructible_v<T, Args...>;
 
+/**
+ * @brief Creates an optional<T> constructing the value in-place from an initializer list and arguments.
+ * @param il The initializer list forwarded to the constructor of @p T.
+ * @param args The additional arguments forwarded to the constructor of @p T.
+ * @return An engaged optional<T> holding the in-place constructed value.
+ */
 template <class T, class U, class... Args>
 constexpr optional<T>
 make_optional(std::initializer_list<U> il,
@@ -330,58 +494,67 @@ class optional {
     /**
      * @brief Constructs an empty optional.
      *
+     * @param rhs Tag indicating the disengaged state.
      */
-    constexpr optional(nullopt_t) noexcept;
+    constexpr optional(nullopt_t rhs) noexcept;
 
     /**
      * @brief   Copy constructs the value from \p rhs if it has one.
      *
+     * @param rhs The optional to copy from.
      */
     constexpr optional(const optional& rhs)
         requires std::is_copy_constructible_v<T> && (!std::is_trivially_copy_constructible_v<T>);
     /**
      * @brief Copy constructs the value from \p rhs if it has one.
+     * @param rhs The optional to copy from.
      * @details Defaulted if T is trivially copy constructible.
      */
-    constexpr optional(const optional&)
+    constexpr optional(const optional& rhs)
         requires std::is_copy_constructible_v<T> && std::is_trivially_copy_constructible_v<T>
     = default;
     /**
      *  @brief Move constructs the value from \p rhs if it has one.
+     *
+     * @param rhs The optional to move from.
      */
     constexpr optional(optional&& rhs) noexcept(std::is_nothrow_move_constructible_v<T>)
         requires std::is_move_constructible_v<T> && (!std::is_trivially_move_constructible_v<T>);
     /**
      * @brief Move constructs the value from \p rhs if it has one.
+     * @param rhs The optional to move from.
      * @details Defaulted if T is trivially move constructible.
      */
-    constexpr optional(optional&&)
+    constexpr optional(optional&& rhs)
         requires std::is_move_constructible_v<T> && std::is_trivially_move_constructible_v<T>
     = default;
 
     /**
      *  @brief   Constructs the value in-place using the given arguments.
      *
+     * @param tag The in-place construction tag.
      * @param args The arguments to use for in-place construction.
      */
     template <class... Args>
-    constexpr explicit optional(in_place_t, Args&&... args)
+    constexpr explicit optional(in_place_t tag, Args&&... args)
         requires std::is_constructible_v<T, Args...>;
 
     /**
      *  @brief   Constructs the value in-place using the given arguments.
      *
+     * @param tag The in-place construction tag.
      * @param il The initializer list to use for in-place construction.
      * @param args The arguments to use for in-place construction.
      */
     template <class U, class... Args>
-    constexpr explicit optional(in_place_t, std::initializer_list<U> il, Args&&... args)
+    constexpr explicit optional(in_place_t tag, std::initializer_list<U> il, Args&&... args)
         requires std::is_constructible_v<T, std::initializer_list<U>&, Args&&...>;
 
     /**
      * @brief   Constructs the value from \p u, forwarding it if necessary.
      *
      * If \p u is convertible to \p T, this is an explicit constructor.
+     * @param u The value to construct the contained value from.
      */
     template <class U = T>
     constexpr explicit(!std::is_convertible_v<U, T>) optional(U&& u)
@@ -391,6 +564,7 @@ class optional {
      * @brief   Constructs the value from \p rhs if it has one.
      *
      * @tparam U
+     * @param rhs The optional to construct the contained value from.
      */
     template <class U>
     constexpr explicit(!std::is_convertible_v<U, T>) optional(const optional<U>& rhs)
@@ -398,6 +572,7 @@ class optional {
 
     /**
      * @brief   Constructs the value from \p rhs if it has one.
+     * @param rhs The optional to construct the contained value from.
      */
     template <class U>
     constexpr explicit(!std::is_convertible_v<U, T>) optional(optional<U>&& rhs)
@@ -421,11 +596,15 @@ class optional {
     // \ref{optional.assign}, assignment
     /**
      * @brief   Resets the optional to an empty state.
+     * @param rhs Tag indicating the disengaged state.
+     * @return `*this`.
      */
-    constexpr optional& operator=(nullopt_t) noexcept;
+    constexpr optional& operator=(nullopt_t rhs) noexcept;
 
     /**
      * @brief   Copy assigns the value from \p rhs if it has one.
+     * @param rhs The optional to copy from.
+     * @return `*this`.
      */
     constexpr optional& operator=(const optional& rhs)
         requires std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T> &&
@@ -434,15 +613,18 @@ class optional {
     /**
      * @brief Copy assigns the value from \p rhs if it has one.
      *
+     * @param rhs The optional to copy from.
      * @return optional&
      */
-    constexpr optional& operator=(const optional&)
+    constexpr optional& operator=(const optional& rhs)
         requires std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T> &&
                      std::is_trivially_copy_constructible_v<T> && std::is_trivially_copy_assignable_v<T>
     = default;
 
     /**
      *  @brief   Move assigns the value from \p rhs if it has one.
+     * @param rhs The optional to move from.
+     * @return `*this`.
      */
     constexpr optional& operator=(optional&& rhs) noexcept(std::is_nothrow_move_constructible_v<T>)
         requires std::is_move_constructible_v<T> && std::is_move_assignable_v<T> &&
@@ -450,8 +632,10 @@ class optional {
 
     /**
      * @brief   Move assigns the value from \p rhs if it has one.
+     * @param rhs The optional to move from.
+     * @return `*this`.
      */
-    constexpr optional& operator=(optional&&)
+    constexpr optional& operator=(optional&& rhs)
         requires std::is_move_constructible_v<T> && std::is_move_assignable_v<T> &&
                      std::is_trivially_move_constructible_v<T> && std::is_trivially_move_assignable_v<T>
     = default;
@@ -470,6 +654,8 @@ class optional {
     /**
      * @brief   Assigns the contained value from \p rhs if it has one, destroying the old value if there
      *
+     * @param rhs The optional to assign from.
+     * @return `*this`.
      */
     template <class U>
     constexpr optional& operator=(const optional<U>& rhs)
@@ -477,6 +663,8 @@ class optional {
 
     /**
      * @brief   Assigns the contained value from \p rhs if it has one, destroying the old value if there
+     * @param rhs The optional to assign from.
+     * @return `*this`.
      */
     template <class U>
     constexpr optional& operator=(optional<U>&& rhs)
@@ -539,6 +727,7 @@ class optional {
     // \ref{optional.observe}, observers
     /**
      * @brief   Returns a pointer to the contained value.
+     * @return const T*
      */
     constexpr const T* operator->() const;
 
@@ -1539,14 +1728,16 @@ class optional<T&> {
 
     /**
      * @brief Constructs an empty optional.
+     * @param rhs Tag indicating the disengaged state.
      */
-    constexpr optional(nullopt_t) noexcept : optional() {}
+    constexpr optional(nullopt_t rhs) noexcept : optional() {}
 
     /**
      * @brief Copy constructor.
      *
      * Constructs an empty optional if the rhs is empty, otherwise constructs
      * the contained value from the rhs.
+     * @param rhs The optional to copy from.
      */
     constexpr optional(const optional& rhs) noexcept = default;
 
@@ -1554,11 +1745,12 @@ class optional<T&> {
      * @brief In-place constructor.
      *
      * @tparam Arg
+     * @param tag The in-place construction tag.
      * @param arg The value to construct in-place from.
      */
     template <class Arg>
         requires (std::is_constructible_v<T&, Arg> && !detail::reference_constructs_from_temporary_v<T&, Arg>)
-    constexpr explicit optional(in_place_t, Arg&& arg);
+    constexpr explicit optional(in_place_t tag, Arg&& arg);
 
     /**
      * @brief Construct from a U
@@ -1737,13 +1929,14 @@ class optional<T&> {
     /**
      * @brief Nullopt assignment operator.
      *
+     * @param rhs Tag indicating the disengaged state.
      * @return optional&
      *
      * @details
      * Destroys the current value if there is one, and leaves the optional
      * in an empty state.
      */
-    constexpr optional& operator=(nullopt_t) noexcept;
+    constexpr optional& operator=(nullopt_t rhs) noexcept;
 
     /**
      * @brief Assignment operator.
